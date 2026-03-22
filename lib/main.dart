@@ -70,25 +70,29 @@ class _AppStartupState extends State<_AppStartup> {
   Future<void> _initialize() async {
     try {
       final llm = context.read<LlmService>();
-      await llm.initialize();
+
+      try {
+        await llm.initialize();
+      } catch (_) {
+        // Initialize failed — go to settings
+        if (mounted) _navigateTo(const SettingsScreen(), replace: true);
+        return;
+      }
 
       if (!llm.isModelInstalled) {
-        // No model yet — go to settings to download one
         if (mounted) _navigateTo(const SettingsScreen(), replace: true);
       } else {
-        // Model is installed on disk — try to load it
+        // Model is installed — try to load, but don't block navigation
         try {
           await llm.loadModel();
         } catch (_) {
-          // Load failed but model is on disk — continue to home,
-          // user can retry from there or go to settings
+          // Load failed — still go to home, user can use settings
         }
         if (mounted) _navigateTo(const HomeScreen(), replace: true);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _error = 'Er ging iets mis bij het opstarten: $e');
-      }
+      // Catch-all: always navigate somewhere, never stay stuck
+      if (mounted) _navigateTo(const SettingsScreen(), replace: true);
     }
   }
 

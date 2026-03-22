@@ -18,10 +18,21 @@ class LlmService {
 
   /// Initialize FlutterGemma (call once at app startup).
   Future<void> initialize() async {
-    await FlutterGemma.initialize();
-    // Check if any model is installed on disk (not just in memory)
-    final installed = await FlutterGemma.listInstalledModels();
-    _isModelInstalled = installed.isNotEmpty || FlutterGemma.hasActiveModel();
+    await FlutterGemma.initialize()
+        .timeout(const Duration(seconds: 30));
+    // Check memory first (fast, synchronous)
+    _isModelInstalled = FlutterGemma.hasActiveModel();
+    // If not in memory, check disk (async, can be slow)
+    if (!_isModelInstalled) {
+      try {
+        final installed = await FlutterGemma.listInstalledModels()
+            .timeout(const Duration(seconds: 10));
+        _isModelInstalled = installed.isNotEmpty;
+      } catch (_) {
+        // Timeout or error — assume not installed
+        _isModelInstalled = false;
+      }
+    }
     _isInitialized = true;
   }
 
