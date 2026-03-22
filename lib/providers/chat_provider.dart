@@ -15,15 +15,29 @@ class ChatProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isGenerating = false;
   bool _isSearching = false;
+  bool _isSpeaking = false;
+  bool _autoSpeak = false;
   String? _error;
   String _currentResponse = '';
+  VoidCallback? _onSpeakingDone;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
   bool get isGenerating => _isGenerating;
   bool get isSearching => _isSearching;
+  bool get isSpeaking => _isSpeaking;
+  bool get autoSpeak => _autoSpeak;
   bool get visionEnabled => _llm.visionEnabled;
   String? get error => _error;
+
+  /// Set callback for when TTS finishes speaking (used for auto-listen).
+  set onSpeakingDone(VoidCallback? callback) => _onSpeakingDone = callback;
+
+  /// Toggle auto-speak mode.
+  void toggleAutoSpeak() {
+    _autoSpeak = !_autoSpeak;
+    notifyListeners();
+  }
 
   ChatProvider({
     required LlmService llm,
@@ -194,6 +208,11 @@ class ChatProvider extends ChangeNotifier {
 
     _isGenerating = false;
     notifyListeners();
+
+    // Auto-speak the response
+    if (_autoSpeak && _currentResponse.isNotEmpty) {
+      await speakMessage(_currentResponse);
+    }
   }
 
   /// Stop the current generation.
@@ -205,12 +224,19 @@ class ChatProvider extends ChangeNotifier {
 
   /// Speak a message aloud using TTS.
   Future<void> speakMessage(String text) async {
+    _isSpeaking = true;
+    notifyListeners();
     await _tts.speak(text);
+    _isSpeaking = false;
+    notifyListeners();
+    _onSpeakingDone?.call();
   }
 
   /// Stop speaking.
   Future<void> stopSpeaking() async {
     await _tts.stop();
+    _isSpeaking = false;
+    notifyListeners();
   }
 
   @override

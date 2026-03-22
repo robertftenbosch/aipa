@@ -194,6 +194,16 @@ class _ChatScreenState extends State<ChatScreen> {
           search: context.read<SearchService>(),
           category: widget.category,
         );
+        // Auto-listen after AI finishes speaking
+        provider.onSpeakingDone = () {
+          if (provider.autoSpeak && _speechAvailable && mounted) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && !_isListening) {
+                _toggleListening(provider);
+              }
+            });
+          }
+        };
         provider.initChat();
         return provider;
       },
@@ -207,16 +217,57 @@ class _ChatScreenState extends State<ChatScreen> {
                 widget.category?.label ?? 'AIPA Chat',
               ),
               leading: IconButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  provider.stopSpeaking();
+                  Navigator.pop(context);
+                },
                 icon: const Icon(Icons.arrow_back, size: 28),
                 tooltip: 'Terug',
               ),
+              actions: [
+                IconButton(
+                  onPressed: provider.toggleAutoSpeak,
+                  icon: Icon(
+                    provider.autoSpeak
+                        ? Icons.record_voice_over
+                        : Icons.voice_over_off,
+                    size: 28,
+                  ),
+                  tooltip: provider.autoSpeak
+                      ? 'Gespreksmodus uit'
+                      : 'Gespreksmodus aan',
+                ),
+              ],
             ),
             body: Column(
               children: [
                 Expanded(
                   child: _buildMessageList(provider),
                 ),
+                if (provider.isSpeaking)
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.volume_up,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        const Text('Aan het praten...',
+                            style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: provider.stopSpeaking,
+                          child: const Text('Stop',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (provider.isSearching)
                   const Padding(
                     padding: EdgeInsets.all(8),
