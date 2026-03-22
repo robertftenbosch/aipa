@@ -50,11 +50,35 @@ class AppConstants {
       modelType: ModelType.deepSeek,
     ),
     ModelConfig(
+      name: 'Qwen3.5 0.8B + Vision',
+      description: "Klein vision model, geen account nodig",
+      url: 'https://huggingface.co/litert-community/Qwen3.5-0.8B-LiteRT/resolve/main/model_multimodal.litertlm',
+      size: '1.1 GB',
+      modelType: ModelType.qwen,
+      supportsVision: true,
+    ),
+    ModelConfig(
+      name: 'Qwen3.5 2B + Vision',
+      description: "Foto's analyseren, goed Nederlands, geen account",
+      url: 'https://huggingface.co/litert-community/Qwen3.5-2B-LiteRT/resolve/main/model_multimodal.litertlm',
+      size: '2.7 GB',
+      modelType: ModelType.qwen,
+      supportsVision: true,
+    ),
+    ModelConfig(
       name: 'Phi-4 Mini 3.9B',
       description: 'Groot en slim, geen account nodig',
       url: 'https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv1280.task',
       size: '3.9 GB',
       modelType: ModelType.general,
+    ),
+    ModelConfig(
+      name: 'Qwen3.5 4B + Vision',
+      description: "Beste vision zonder account, groot maar krachtig",
+      url: 'https://huggingface.co/litert-community/Qwen3.5-4B-LiteRT/resolve/main/model_multimodal.litertlm',
+      size: '5.0 GB',
+      modelType: ModelType.qwen,
+      supportsVision: true,
     ),
     // --- HuggingFace account nodig ---
     ModelConfig(
