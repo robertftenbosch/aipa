@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import '../config/constants.dart';
 import '../services/llm_service.dart';
+import 'home_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -90,14 +91,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (mounted) {
         setState(() => _isDownloading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${selectedModel.name} is geinstalleerd!',
-              style: const TextStyle(fontSize: 18),
-            ),
-            backgroundColor: Colors.green,
-          ),
+        // Navigate to home screen
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -124,11 +122,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Instellingen'),
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, size: 28),
-          tooltip: 'Terug',
-        ),
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 28),
+                tooltip: 'Terug',
+              )
+            : null,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
