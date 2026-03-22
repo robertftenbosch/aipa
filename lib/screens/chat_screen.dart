@@ -302,9 +302,12 @@ class _ChatScreenState extends State<ChatScreen> {
       itemCount: provider.messages.length,
       itemBuilder: (context, index) {
         final message = provider.messages[index];
+        final isLastMessage = index == provider.messages.length - 1;
         return ChatBubble(
           message: message,
-          onSpeak: message.role == MessageRole.assistant
+          isTyping: isLastMessage && provider.isGenerating,
+          onSpeak: message.role == MessageRole.assistant &&
+                  message.text.isNotEmpty
               ? () => provider.speakMessage(message.text)
               : null,
         );
