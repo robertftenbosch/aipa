@@ -1,0 +1,25 @@
+name: aipa
+description: "AIPA - AI Personal Assistent voor ouderen"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_gemma: ^0.12.6
+  provider: ^6.1.2
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
