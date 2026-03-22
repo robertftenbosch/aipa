@@ -87,16 +87,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await _storage.write(key: _tokenKey, value: token);
       }
 
-      await llm.loadModel(supportImage: selectedModel.supportsVision);
-
       if (mounted) {
         setState(() => _isDownloading = false);
-        // Navigate to home screen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
+
+        // Try to load model, then navigate
+        try {
+          await llm.loadModel(supportImage: selectedModel.supportsVision);
+        } catch (_) {
+          // Model load may fail on first try, home screen will retry
+        }
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -166,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Expanded(
                     child: Text(
                       llm.isModelInstalled
-                          ? 'AI-model is geinstalleerd en klaar voor gebruik.'
+                          ? 'AI-model is geinstalleerd.'
                           : 'Nog geen AI-model geinstalleerd. Download hieronder een model.',
                       style: const TextStyle(fontSize: 18),
                     ),
@@ -174,6 +181,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+
+            if (llm.isModelInstalled) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 64,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      (route) => false,
+                    );
+                  },
+                  icon: const Icon(Icons.home, size: 28),
+                  label: const Text('Naar hoofdmenu'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
 
             const SizedBox(height: 32),
 
