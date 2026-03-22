@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'config/theme.dart';
 import 'config/constants.dart';
 import 'services/llm_service.dart';
@@ -62,10 +63,25 @@ class _AppStartupState extends State<_AppStartup> {
   int _selectedModelIndex = 0;
   final _tokenController = TextEditingController();
 
+  static const _tokenKey = 'hf_token';
+
   @override
   void initState() {
     super.initState();
     _initialize();
+  }
+
+  Future<void> _loadSavedToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_tokenKey);
+    if (saved != null && saved.isNotEmpty) {
+      _tokenController.text = saved;
+    }
+  }
+
+  Future<void> _saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
   }
 
   Future<void> _initialize() async {
@@ -74,6 +90,7 @@ class _AppStartupState extends State<_AppStartup> {
       await llm.initialize();
 
       if (!llm.isModelInstalled) {
+        await _loadSavedToken();
         setState(() {
           _isInitializing = false;
           _needsModelDownload = true;
@@ -123,6 +140,11 @@ class _AppStartupState extends State<_AppStartup> {
         if (mounted) {
           setState(() => _downloadProgress = progress);
         }
+      }
+
+      // Save token for next time
+      if (token.isNotEmpty) {
+        await _saveToken(token);
       }
 
       await llm.loadModel(supportImage: selectedModel.supportsVision);
