@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 
 class LlmService {
@@ -10,11 +11,15 @@ class LlmService {
   bool _isModelInstalled = false;
   bool _isFirstMessage = true;
   bool _visionEnabled = false;
+  bool _useGpu = true;
   String? _categoryId;
+
+  static const _gpuPrefKey = 'use_gpu';
 
   bool get isInitialized => _isInitialized;
   bool get isModelInstalled => _isModelInstalled;
   bool get visionEnabled => _visionEnabled;
+  bool get useGpu => _useGpu;
 
   /// Initialize FlutterGemma (call once at app startup).
   Future<void> initialize() async {
@@ -66,22 +71,58 @@ class LlmService {
 
   bool get isModelLoaded => _modelLoaded;
 
+  /// Load GPU preference from storage.
+  Future<void> _loadGpuPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    _useGpu = prefs.getBool(_gpuPrefKey) ?? true;
+  }
+
+  /// Set GPU preference.
+  Future<void> setUseGpu(bool value) async {
+    _useGpu = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_gpuPrefKey, value);
+  }
+
   /// Load the model into memory and prepare for inference.
-  /// Uses CPU backend for reliability (GPU cache can become stale).
+  /// Tries GPU first (fast), falls back to CPU (reliable).
   Future<void> loadModel({bool supportImage = false}) async {
     _visionEnabled = supportImage;
     _modelLoaded = false;
+    await _loadGpuPref();
+
+    final backend =
+        _useGpu ? PreferredBackend.gpu : PreferredBackend.cpu;
+
     try {
       _model = await FlutterGemma.getActiveModel(
         maxTokens: 512,
-        preferredBackend: PreferredBackend.cpu,
+        preferredBackend: backend,
         supportImage: supportImage,
-      ).timeout(const Duration(seconds: 60));
+      ).timeout(const Duration(seconds: 90));
       _modelLoaded = true;
     } catch (_) {
-      _model = null;
-      _modelLoaded = false;
-      rethrow;
+      // If GPU failed, try CPU as fallback
+      if (_useGpu) {
+        try {
+          _model = await FlutterGemma.getActiveModel(
+            maxTokens: 512,
+            preferredBackend: PreferredBackend.cpu,
+            supportImage: supportImage,
+          ).timeout(const Duration(seconds: 90));
+          _modelLoaded = true;
+          // Remember that CPU worked (GPU had issues)
+          await setUseGpu(false);
+        } catch (_) {
+          _model = null;
+          _modelLoaded = false;
+          rethrow;
+        }
+      } else {
+        _model = null;
+        _modelLoaded = false;
+        rethrow;
+      }
     }
   }
 
