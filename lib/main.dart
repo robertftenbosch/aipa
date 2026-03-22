@@ -55,6 +55,8 @@ class _AppStartupState extends State<_AppStartup> {
   double _downloadProgress = 0;
   bool _isDownloading = false;
   String? _error;
+  int _selectedModelIndex = 0;
+  final _tokenController = TextEditingController();
 
   @override
   void initState() {
@@ -90,6 +92,16 @@ class _AppStartupState extends State<_AppStartup> {
   }
 
   Future<void> _downloadModel() async {
+    final selectedModel = AppConstants.availableModels[_selectedModelIndex];
+    final token = _tokenController.text.trim();
+
+    if (selectedModel.requiresToken && token.isEmpty) {
+      setState(() {
+        _error = 'Dit model vereist een HuggingFace token. Maak een gratis account aan op huggingface.co en vul uw token in.';
+      });
+      return;
+    }
+
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0;
@@ -99,11 +111,11 @@ class _AppStartupState extends State<_AppStartup> {
     try {
       final llm = context.read<LlmService>();
 
-      // Gemma 3n E2B model URL from HuggingFace
-      const modelUrl =
-          'https://huggingface.co/aspect12/gemma-3n-E2B-it-mediapipe/resolve/main/gemma3n-E2B-it-gpu.task';
-
-      await for (final progress in llm.installModel(modelUrl)) {
+      await for (final progress in llm.installModel(
+        selectedModel.url,
+        modelType: selectedModel.modelType,
+        huggingFaceToken: token.isNotEmpty ? token : null,
+      )) {
         if (mounted) {
           setState(() => _downloadProgress = progress);
         }
@@ -123,6 +135,12 @@ class _AppStartupState extends State<_AppStartup> {
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
   }
 
   void _navigateToHome() {
@@ -174,67 +192,153 @@ class _AppStartupState extends State<_AppStartup> {
     }
 
     if (_needsModelDownload) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.download, size: 80, color: Color(0xFF1565C0)),
-          const SizedBox(height: 24),
-          const Text(
-            'AI-model downloaden',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Om u te kunnen helpen moet de app eerst een AI-model downloaden. Dit is eenmalig en duurt een paar minuten.',
-            style: TextStyle(fontSize: 20, height: 1.5),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Grootte: ongeveer 1-2 GB',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-          const SizedBox(height: 32),
-          if (_isDownloading) ...[
-            LinearProgressIndicator(
-              value: _downloadProgress / 100,
-              minHeight: 12,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '${_downloadProgress.toStringAsFixed(0)}% gedownload',
-              style: const TextStyle(fontSize: 20),
-            ),
-          ] else ...[
-            SizedBox(
-              width: double.infinity,
-              height: 64,
-              child: ElevatedButton.icon(
-                onPressed: _downloadModel,
-                icon: const Icon(Icons.download, size: 28),
-                label: const Text('Download starten'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1565C0),
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
-          if (_error != null) ...[
+      final selectedModel = AppConstants.availableModels[_selectedModelIndex];
+      return SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.download, size: 80, color: Color(0xFF1565C0)),
             const SizedBox(height: 24),
-            Text(
-              _error!,
-              style: const TextStyle(fontSize: 18, color: Colors.red),
-              textAlign: TextAlign.center,
+            const Text(
+              'AI-model downloaden',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _downloadModel,
-              child: const Text('Opnieuw proberen'),
+            const Text(
+              'Kies een AI-model. Dit wordt eenmalig gedownload.',
+              style: TextStyle(fontSize: 20, height: 1.5),
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 24),
+            // Model selection
+            ...List.generate(AppConstants.availableModels.length, (index) {
+              final model = AppConstants.availableModels[index];
+              final isSelected = index == _selectedModelIndex;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: isSelected
+                      ? const Color(0xFF1565C0).withAlpha(25)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: _isDownloading
+                        ? null
+                        : () => setState(() => _selectedModelIndex = index),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF1565C0)
+                              : Colors.grey.shade300,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                model.name,
+                                style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const Spacer(),
+                              Text(
+                                model.size,
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            model.description,
+                            style: TextStyle(
+                                fontSize: 16, color: Colors.grey[600]),
+                          ),
+                          if (model.requiresToken)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Vereist HuggingFace token',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.orange[700],
+                                    fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            // HuggingFace token input
+            if (selectedModel.requiresToken) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _tokenController,
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
+                  labelText: 'HuggingFace Token',
+                  hintText: 'hf_...',
+                  helperText: 'Maak gratis aan op huggingface.co/settings/tokens',
+                  helperStyle: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            if (_isDownloading) ...[
+              LinearProgressIndicator(
+                value: _downloadProgress / 100,
+                minHeight: 12,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${_downloadProgress.toStringAsFixed(0)}% gedownload',
+                style: const TextStyle(fontSize: 20),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                height: 64,
+                child: ElevatedButton.icon(
+                  onPressed: _downloadModel,
+                  icon: const Icon(Icons.download, size: 28),
+                  label: const Text('Download starten'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 24),
+              Text(
+                _error!,
+                style: const TextStyle(fontSize: 18, color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _downloadModel,
+                child: const Text('Opnieuw proberen'),
+              ),
+            ],
           ],
-        ],
+        ),
       );
     }
 

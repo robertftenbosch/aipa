@@ -18,20 +18,22 @@ class LlmService {
     _isInitialized = true;
   }
 
-  /// Install the Gemma model from a URL. Returns a stream of download progress (0-100).
-  Stream<double> installModel(String modelUrl, {String? huggingFaceToken}) {
+  /// Install a model from a URL. Returns a stream of download progress (0-100).
+  Stream<double> installModel(
+    String modelUrl, {
+    ModelType modelType = ModelType.gemmaIt,
+    String? huggingFaceToken,
+  }) {
     final controller = StreamController<double>();
 
-    FlutterGemma.installModel(
-      modelType: ModelType.gemmaIt,
+    var builder = FlutterGemma.installModel(
+      modelType: modelType,
       fileType: ModelFileType.task,
-    )
-        .fromNetwork(modelUrl, token: huggingFaceToken)
-        .withProgress((progress) {
-          controller.add(progress.toDouble());
-        })
-        .install()
-        .then((_) {
+    ).fromNetwork(modelUrl, token: huggingFaceToken);
+
+    builder.withProgress((progress) {
+      controller.add(progress.toDouble());
+    }).install().then((_) {
       _isModelInstalled = true;
       controller.close();
     }).catchError((e) {

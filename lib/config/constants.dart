@@ -1,8 +1,55 @@
+import 'package:flutter_gemma/flutter_gemma.dart';
+
+class ModelConfig {
+  final String name;
+  final String description;
+  final String url;
+  final String size;
+  final ModelType modelType;
+  final bool requiresToken;
+
+  const ModelConfig({
+    required this.name,
+    required this.description,
+    required this.url,
+    required this.size,
+    required this.modelType,
+    this.requiresToken = false,
+  });
+}
+
 class AppConstants {
   static const String appName = 'AIPA';
   static const String appSubtitle = 'Uw Digitale Hulp';
 
   static const int maxTokens = 512;
+
+  static const List<ModelConfig> availableModels = [
+    ModelConfig(
+      name: 'Gemma 3 1B',
+      description: 'Klein en snel model, goed voor eenvoudige taken',
+      url: 'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.task',
+      size: '529 MB',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+    ),
+    ModelConfig(
+      name: 'Gemma 3n E2B',
+      description: 'Groter model, beter in Nederlands',
+      url: 'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',
+      size: '3.1 GB',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+    ),
+    ModelConfig(
+      name: 'DeepSeek R1 1.5B',
+      description: 'Geen account nodig, redelijk goed',
+      url: 'https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv1280.task',
+      size: '1.6 GB',
+      modelType: ModelType.deepSeek,
+      requiresToken: false,
+    ),
+  ];
 
   static const String baseSystemPrompt = '''
 Je bent AIPA, een vriendelijke en geduldige assistent die ouderen helpt met technologie.
