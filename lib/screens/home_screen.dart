@@ -3,6 +3,7 @@ import '../config/constants.dart';
 import '../models/task_category.dart';
 import '../widgets/category_button.dart';
 import 'chat_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,18 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+            icon: const Icon(Icons.settings, size: 28),
+            tooltip: 'Instellingen',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
