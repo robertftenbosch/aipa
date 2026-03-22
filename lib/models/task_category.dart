@@ -40,5 +40,12 @@ class TaskCategory {
       icon: Icons.help_outline,
       greeting: 'Hallo! Waarmee kan ik u helpen?',
     ),
+    TaskCategory(
+      id: 'kletsen',
+      label: 'Gezellig kletsen',
+      icon: Icons.favorite,
+      greeting:
+          'Hallo! Wat leuk dat u er bent. Hoe gaat het vandaag met u?',
+    ),
   ];
 }

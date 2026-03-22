@@ -77,21 +77,24 @@ class ChatProvider extends ChangeNotifier {
     ));
     notifyListeners();
 
-    // Auto-search the web for context
+    // Auto-search the web for context (skip for casual chat)
+    final skipSearch = category?.id == 'kletsen';
     String? searchContext;
-    try {
-      _isSearching = true;
-      notifyListeners();
+    if (!skipSearch) {
+      try {
+        _isSearching = true;
+        notifyListeners();
 
-      final results = await _search.search(userText);
-      if (results.isNotEmpty) {
-        searchContext = _search.formatResults(results);
+        final results = await _search.search(userText);
+        if (results.isNotEmpty) {
+          searchContext = _search.formatResults(results);
+        }
+      } catch (_) {
+        // Search failed — continue without it
+      } finally {
+        _isSearching = false;
+        notifyListeners();
       }
-    } catch (_) {
-      // Search failed — continue without it
-    } finally {
-      _isSearching = false;
-      notifyListeners();
     }
 
     // Build prompt with optional search context

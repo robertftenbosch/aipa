@@ -13,14 +13,20 @@ class CategoryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isChat = category.id == 'kletsen';
+    final iconColor = isChat
+        ? const Color(0xFFE91E63)
+        : Theme.of(context).colorScheme.primary;
+    final bgColor = isChat ? const Color(0xFFFCE4EC) : Colors.white;
+
     return Material(
-      color: Colors.white,
+      color: bgColor,
       borderRadius: BorderRadius.circular(20),
       elevation: 2,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        splashColor: Theme.of(context).colorScheme.primary.withAlpha(30),
+        splashColor: iconColor.withAlpha(30),
         child: Container(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -29,7 +35,7 @@ class CategoryButton extends StatelessWidget {
               Icon(
                 category.icon,
                 size: 56,
-                color: Theme.of(context).colorScheme.primary,
+                color: iconColor,
               ),
               const SizedBox(height: 12),
               Text(
