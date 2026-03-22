@@ -54,7 +54,7 @@ class SearchService {
     }
   }
 
-  /// Format search results as text.
+  /// Format search results as text. Truncates snippets to keep prompts short.
   String formatResults(List<SearchResultItem> results, {String label = 'Zoekresultaten'}) {
     if (results.isEmpty) {
       return 'Geen resultaten gevonden.';
@@ -63,7 +63,13 @@ class SearchService {
     final buffer = StringBuffer('$label:\n');
     for (var i = 0; i < results.length; i++) {
       buffer.writeln('${i + 1}. ${results[i].title}');
-      buffer.writeln('   ${results[i].snippet}');
+      final snippet = results[i].snippet;
+      // Truncate long snippets to save tokens
+      if (snippet.length > 150) {
+        buffer.writeln('   ${snippet.substring(0, 150)}...');
+      } else {
+        buffer.writeln('   $snippet');
+      }
     }
     return buffer.toString();
   }

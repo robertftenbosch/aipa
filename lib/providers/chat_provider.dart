@@ -138,14 +138,14 @@ class ChatProvider extends ChangeNotifier {
           externalContext = await _weather.getCurrentWeather();
           break;
         case _QueryType.news:
-          final results = await _search.searchNews(userText);
+          final results = await _search.searchNews(userText, maxResults: 2);
           if (results.isNotEmpty) {
             externalContext =
                 _search.formatResults(results, label: 'Laatste nieuws');
           }
           break;
         case _QueryType.general:
-          final results = await _search.search(userText);
+          final results = await _search.search(userText, maxResults: 2);
           if (results.isNotEmpty) {
             externalContext = _search.formatResults(results);
           }
