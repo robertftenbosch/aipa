@@ -243,6 +243,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 32),
 
+            // GPU toggle
+            const Text(
+              'Prestaties',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: SwitchListTile(
+                title: const Text(
+                  'GPU versnelling',
+                  style: TextStyle(fontSize: 18),
+                ),
+                subtitle: Text(
+                  llm.useGpu
+                      ? 'Aan — sneller, maar kan problemen geven'
+                      : 'Uit — langzamer maar stabieler',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+                value: llm.useGpu,
+                onChanged: (value) async {
+                  await llm.setUseGpu(value);
+                  setState(() {});
+                },
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
             // Model selection
             const Text(
               'AI-model',
@@ -369,39 +402,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
-
-            const SizedBox(height: 32),
-
-            // GPU toggle
-            const Text(
-              'Prestaties',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: SwitchListTile(
-                title: const Text(
-                  'GPU versnelling',
-                  style: TextStyle(fontSize: 18),
-                ),
-                subtitle: Text(
-                  llm.useGpu
-                      ? 'Aan — sneller, maar kan problemen geven'
-                      : 'Uit — langzamer maar stabieler',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                value: llm.useGpu,
-                onChanged: (value) async {
-                  await llm.setUseGpu(value);
-                  setState(() {});
-                },
-              ),
-            ),
 
             const SizedBox(height: 32),
 

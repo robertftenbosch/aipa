@@ -27,38 +27,61 @@ class AppConstants {
   static const int maxTokens = 512;
 
   static const List<ModelConfig> availableModels = [
+    // --- Geen account nodig ---
     ModelConfig(
-      name: 'Gemma 3n E4B + Vision',
-      description: "Kan foto's analyseren (TV, kabels, router). Aanbevolen!",
-      url: 'https://huggingface.co/google/gemma-3n-E4B-it-litert-preview/resolve/main/gemma-3n-E4B-it-int4.task',
-      size: '4.4 GB',
-      modelType: ModelType.gemmaIt,
-      requiresToken: true,
-      supportsVision: true,
+      name: 'Qwen 2.5 1.5B',
+      description: 'Goed Nederlands, geen account nodig. Aanbevolen!',
+      url: 'https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv1280.task',
+      size: '1.6 GB',
+      modelType: ModelType.qwen,
     ),
     ModelConfig(
+      name: 'Qwen3 0.6B',
+      description: 'Heel klein en snel, basis Nederlands',
+      url: 'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm',
+      size: '586 MB',
+      modelType: ModelType.qwen,
+    ),
+    ModelConfig(
+      name: 'DeepSeek R1 1.5B',
+      description: 'Goed in redeneren, geen account nodig',
+      url: 'https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv1280.task',
+      size: '1.9 GB',
+      modelType: ModelType.deepSeek,
+    ),
+    ModelConfig(
+      name: 'Phi-4 Mini 3.9B',
+      description: 'Groot en slim, geen account nodig',
+      url: 'https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv1280.task',
+      size: '3.9 GB',
+      modelType: ModelType.general,
+    ),
+    // --- HuggingFace account nodig ---
+    ModelConfig(
       name: 'Gemma 3 1B',
-      description: 'Klein en snel, alleen tekst',
+      description: 'Klein, snel, goed Nederlands',
       url: 'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.task',
       size: '529 MB',
       modelType: ModelType.gemmaIt,
       requiresToken: true,
     ),
     ModelConfig(
-      name: 'Gemma 3n E2B',
-      description: 'Groter model, beter in Nederlands, alleen tekst',
+      name: 'Gemma 3n E2B + Vision',
+      description: "Foto's analyseren, goed Nederlands",
       url: 'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',
-      size: '3.1 GB',
+      size: '3.7 GB',
       modelType: ModelType.gemmaIt,
       requiresToken: true,
+      supportsVision: true,
     ),
     ModelConfig(
-      name: 'DeepSeek R1 1.5B',
-      description: 'Geen account nodig, alleen tekst',
-      url: 'https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv1280.task',
-      size: '1.6 GB',
-      modelType: ModelType.deepSeek,
-      requiresToken: false,
+      name: 'Gemma 3n E4B + Vision',
+      description: "Beste Nederlands + foto's. Groot maar krachtig",
+      url: 'https://huggingface.co/google/gemma-3n-E4B-it-litert-preview/resolve/main/gemma-3n-E4B-it-int4.task',
+      size: '4.4 GB',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+      supportsVision: true,
     ),
   ];
 
