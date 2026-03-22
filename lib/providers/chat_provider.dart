@@ -4,11 +4,15 @@ import '../models/task_category.dart';
 import '../services/llm_service.dart';
 import '../services/search_service.dart';
 import '../services/tts_service.dart';
+import '../services/weather_service.dart';
+
+enum _QueryType { weather, news, general }
 
 class ChatProvider extends ChangeNotifier {
   final LlmService _llm;
   final TtsService _tts;
   final SearchService _search;
+  final WeatherService _weather;
   final TaskCategory? category;
 
   final List<ChatMessage> _messages = [];
@@ -43,10 +47,34 @@ class ChatProvider extends ChangeNotifier {
     required LlmService llm,
     required TtsService tts,
     required SearchService search,
+    required WeatherService weather,
     this.category,
   })  : _llm = llm,
         _tts = tts,
-        _search = search;
+        _search = search,
+        _weather = weather;
+
+  /// Detect what type of query this is.
+  static _QueryType _detectQueryType(String text) {
+    final lower = text.toLowerCase();
+    const weatherWords = [
+      'weer', 'temperatuur', 'graden', 'regen', 'zon', 'sneeuw',
+      'wind', 'bewolkt', 'warm', 'koud', 'buien', 'onweer',
+      'weather', 'forecast',
+    ];
+    const newsWords = [
+      'nieuws', 'headlines', 'actualiteit', 'vandaag gebeurd',
+      'wat is er gaande', 'krant', 'news',
+    ];
+
+    for (final w in weatherWords) {
+      if (lower.contains(w)) return _QueryType.weather;
+    }
+    for (final w in newsWords) {
+      if (lower.contains(w)) return _QueryType.news;
+    }
+    return _QueryType.general;
+  }
 
   /// Initialize the chat session and send a greeting.
   Future<void> initChat() async {
@@ -91,33 +119,51 @@ class ChatProvider extends ChangeNotifier {
     ));
     notifyListeners();
 
-    // Auto-search the web for context (skip for casual chat)
-    final skipSearch = category?.id == 'kletsen';
-    String? searchContext;
-    if (!skipSearch) {
-      try {
-        _isSearching = true;
-        notifyListeners();
-
-        final results = await _search.search(userText);
-        if (results.isNotEmpty) {
-          searchContext = _search.formatResults(results);
-        }
-      } catch (_) {
-        // Search failed — continue without it
-      } finally {
-        _isSearching = false;
-        notifyListeners();
-      }
+    // Skip external lookups for casual chat
+    if (category?.id == 'kletsen') {
+      await _generateResponse(_llm.sendMessage(userText));
+      return;
     }
 
-    // Build prompt with optional search context
+    // Detect query type and fetch relevant context
+    final queryType = _detectQueryType(userText);
+    String? externalContext;
+
+    try {
+      _isSearching = true;
+      notifyListeners();
+
+      switch (queryType) {
+        case _QueryType.weather:
+          externalContext = await _weather.getCurrentWeather();
+          break;
+        case _QueryType.news:
+          final results = await _search.searchNews(userText);
+          if (results.isNotEmpty) {
+            externalContext =
+                _search.formatResults(results, label: 'Laatste nieuws');
+          }
+          break;
+        case _QueryType.general:
+          final results = await _search.search(userText);
+          if (results.isNotEmpty) {
+            externalContext = _search.formatResults(results);
+          }
+          break;
+      }
+    } catch (_) {
+      // External lookup failed — continue without it
+    } finally {
+      _isSearching = false;
+      notifyListeners();
+    }
+
+    // Build prompt with external context
     String prompt = userText;
-    if (searchContext != null) {
+    if (externalContext != null) {
       prompt = 'Vraag: $userText\n\n'
-          'Hier is informatie van het internet die kan helpen:\n'
-          '$searchContext\n\n'
-          'Gebruik deze informatie om een duidelijk antwoord te geven.';
+          '$externalContext\n\n'
+          'Gebruik deze informatie om een duidelijk antwoord te geven in eenvoudig Nederlands.';
     }
 
     await _generateResponse(_llm.sendMessage(prompt));

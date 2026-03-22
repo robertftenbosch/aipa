@@ -15,7 +15,7 @@ class SearchResultItem {
 class SearchService {
   final ddg.DuckDuckGoSearch _ddg = ddg.DuckDuckGoSearch();
 
-  /// Search the web using DuckDuckGo. Returns up to [maxResults] results.
+  /// Search the web using DuckDuckGo.
   Future<List<SearchResultItem>> search(String query,
       {int maxResults = 3}) async {
     try {
@@ -32,13 +32,35 @@ class SearchService {
     }
   }
 
-  /// Format search results as text to inject into the chat context.
-  String formatResults(List<SearchResultItem> results) {
+  /// Search for recent news using DuckDuckGo.
+  Future<List<SearchResultItem>> searchNews(String query,
+      {int maxResults = 3}) async {
+    try {
+      final results = await _ddg.news(
+        query,
+        region: 'nl-nl',
+        timelimit: 'd',
+        maxResults: maxResults,
+      );
+      return results
+          .map((r) => SearchResultItem(
+                title: r.title,
+                snippet: r.body,
+                url: r.url,
+              ))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Format search results as text.
+  String formatResults(List<SearchResultItem> results, {String label = 'Zoekresultaten'}) {
     if (results.isEmpty) {
-      return 'Geen zoekresultaten gevonden.';
+      return 'Geen resultaten gevonden.';
     }
 
-    final buffer = StringBuffer('Zoekresultaten:\n');
+    final buffer = StringBuffer('$label:\n');
     for (var i = 0; i < results.length; i++) {
       buffer.writeln('${i + 1}. ${results[i].title}');
       buffer.writeln('   ${results[i].snippet}');

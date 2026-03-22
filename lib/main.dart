@@ -6,6 +6,7 @@ import 'config/constants.dart';
 import 'services/llm_service.dart';
 import 'services/search_service.dart';
 import 'services/tts_service.dart';
+import 'services/weather_service.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -34,6 +35,9 @@ class AipaApp extends StatelessWidget {
         ),
         Provider<SearchService>(
           create: (_) => SearchService(),
+        ),
+        Provider<WeatherService>(
+          create: (_) => WeatherService(),
         ),
       ],
       child: MaterialApp(

@@ -8,6 +8,7 @@ import '../services/llm_service.dart';
 import '../services/search_service.dart';
 import '../services/speech_service.dart';
 import '../services/tts_service.dart';
+import '../services/weather_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/message_input.dart';
 
@@ -192,6 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
           llm: context.read<LlmService>(),
           tts: context.read<TtsService>(),
           search: context.read<SearchService>(),
+          weather: context.read<WeatherService>(),
           category: widget.category,
         );
         // Auto-listen after AI finishes speaking
