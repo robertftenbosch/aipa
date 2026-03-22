@@ -72,7 +72,16 @@ class _AppStartupState extends State<_AppStartup> {
     _initialize();
   }
 
+  // Read from --dart-define=HF_TOKEN=hf_... at build time
+  static const _envToken = String.fromEnvironment('HF_TOKEN');
+
   Future<void> _loadSavedToken() async {
+    // 1. Check build-time env var first
+    if (_envToken.isNotEmpty) {
+      _tokenController.text = _envToken;
+      return;
+    }
+    // 2. Fall back to secure storage
     final saved = await _storage.read(key: _tokenKey);
     if (saved != null && saved.isNotEmpty) {
       _tokenController.text = saved;
