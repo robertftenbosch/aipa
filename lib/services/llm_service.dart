@@ -49,29 +49,43 @@ class LlmService {
     return controller.stream;
   }
 
+  bool _modelLoaded = false;
+
+  bool get isModelLoaded => _modelLoaded;
+
   /// Load the model into memory and prepare for inference.
   /// Tries GPU first (much faster), falls back to CPU if GPU fails.
   Future<void> loadModel({bool supportImage = false}) async {
     _visionEnabled = supportImage;
+    _modelLoaded = false;
     try {
       _model = await FlutterGemma.getActiveModel(
         maxTokens: 512,
         preferredBackend: PreferredBackend.gpu,
         supportImage: supportImage,
-      );
+      ).timeout(const Duration(seconds: 60));
+      _modelLoaded = true;
     } catch (_) {
-      _model = await FlutterGemma.getActiveModel(
-        maxTokens: 512,
-        preferredBackend: PreferredBackend.cpu,
-        supportImage: supportImage,
-      );
+      try {
+        _model = await FlutterGemma.getActiveModel(
+          maxTokens: 512,
+          preferredBackend: PreferredBackend.cpu,
+          supportImage: supportImage,
+        ).timeout(const Duration(seconds: 60));
+        _modelLoaded = true;
+      } catch (_) {
+        _model = null;
+        _modelLoaded = false;
+        rethrow;
+      }
     }
   }
 
   /// Start a new chat session with optional category context.
   Future<void> startChat(String? categoryId) async {
     if (_model == null) {
-      await loadModel();
+      throw StateError(
+          'Model niet geladen. Ga naar Instellingen om een model te downloaden.');
     }
 
     _chat = await _model!.createChat(

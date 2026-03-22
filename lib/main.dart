@@ -76,8 +76,13 @@ class _AppStartupState extends State<_AppStartup> {
         // No model yet — go to settings to download one
         if (mounted) _navigateTo(const SettingsScreen(), replace: true);
       } else {
-        await llm.loadModel();
-        if (mounted) _navigateTo(const HomeScreen(), replace: true);
+        try {
+          await llm.loadModel();
+          if (mounted) _navigateTo(const HomeScreen(), replace: true);
+        } catch (_) {
+          // Model load failed (corrupt cache, etc.) — go to settings
+          if (mounted) _navigateTo(const SettingsScreen(), replace: true);
+        }
       }
     } catch (e) {
       if (mounted) {
