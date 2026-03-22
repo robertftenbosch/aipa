@@ -7,6 +7,8 @@ class LlmService {
   InferenceChat? _chat;
   bool _isInitialized = false;
   bool _isModelInstalled = false;
+  bool _isFirstMessage = true;
+  String? _categoryId;
 
   bool get isInitialized => _isInitialized;
   bool get isModelInstalled => _isModelInstalled;
@@ -45,10 +47,11 @@ class LlmService {
   }
 
   /// Load the model into memory and prepare for inference.
+  /// Uses CPU backend for maximum compatibility.
   Future<void> loadModel() async {
     _model = await FlutterGemma.getActiveModel(
-      maxTokens: 1024,
-      preferredBackend: PreferredBackend.gpu,
+      maxTokens: 512,
+      preferredBackend: PreferredBackend.cpu,
     );
   }
 
@@ -62,24 +65,25 @@ class LlmService {
       temperature: 0.7,
       topK: 40,
     );
-
-    // Add the system prompt as context
-    final systemPrompt = AppConstants.getSystemPrompt(categoryId);
-    await _chat!.addQueryChunk(
-      Message.text(text: systemPrompt, isUser: true),
-    );
-
-    // Let the model acknowledge the system prompt silently
-    await _chat!.generateChatResponse();
+    _isFirstMessage = true;
+    _categoryId = categoryId;
   }
 
   /// Send a user message and get a streaming response.
+  /// On the first message, prepends the system prompt for context.
   Stream<String> sendMessage(String text) async* {
     if (_chat == null) {
       throw StateError('Chat not started. Call startChat() first.');
     }
 
-    await _chat!.addQuery(Message.text(text: text, isUser: true));
+    String prompt = text;
+    if (_isFirstMessage) {
+      final systemPrompt = AppConstants.getSystemPrompt(_categoryId);
+      prompt = '$systemPrompt\n\nGebruiker: $text';
+      _isFirstMessage = false;
+    }
+
+    await _chat!.addQuery(Message.text(text: prompt, isUser: true));
 
     final stream = _chat!.generateChatResponseAsync();
     await for (final response in stream) {
@@ -87,20 +91,6 @@ class LlmService {
         yield response.token;
       }
     }
-  }
-
-  /// Send a message and wait for the complete response.
-  Future<String> sendMessageSync(String text) async {
-    if (_chat == null) {
-      throw StateError('Chat not started. Call startChat() first.');
-    }
-
-    await _chat!.addQuery(Message.text(text: text, isUser: true));
-    final response = await _chat!.generateChatResponse();
-    if (response is TextResponse) {
-      return response.token;
-    }
-    return '';
   }
 
   /// Stop the current generation.
