@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import '../config/constants.dart';
 
@@ -8,10 +9,12 @@ class LlmService {
   bool _isInitialized = false;
   bool _isModelInstalled = false;
   bool _isFirstMessage = true;
+  bool _visionEnabled = false;
   String? _categoryId;
 
   bool get isInitialized => _isInitialized;
   bool get isModelInstalled => _isModelInstalled;
+  bool get visionEnabled => _visionEnabled;
 
   /// Initialize FlutterGemma (call once at app startup).
   Future<void> initialize() async {
@@ -47,11 +50,12 @@ class LlmService {
   }
 
   /// Load the model into memory and prepare for inference.
-  /// Uses CPU backend for maximum compatibility.
-  Future<void> loadModel() async {
+  Future<void> loadModel({bool supportImage = false}) async {
+    _visionEnabled = supportImage;
     _model = await FlutterGemma.getActiveModel(
       maxTokens: 512,
       preferredBackend: PreferredBackend.cpu,
+      supportImage: supportImage,
     );
   }
 
@@ -64,13 +68,13 @@ class LlmService {
     _chat = await _model!.createChat(
       temperature: 0.7,
       topK: 40,
+      supportImage: _visionEnabled,
     );
     _isFirstMessage = true;
     _categoryId = categoryId;
   }
 
-  /// Send a user message and get a streaming response.
-  /// On the first message, prepends the system prompt for context.
+  /// Send a text message and get a streaming response.
   Stream<String> sendMessage(String text) async* {
     if (_chat == null) {
       throw StateError('Chat not started. Call startChat() first.');
@@ -84,6 +88,34 @@ class LlmService {
     }
 
     await _chat!.addQuery(Message.text(text: prompt, isUser: true));
+
+    final stream = _chat!.generateChatResponseAsync();
+    await for (final response in stream) {
+      if (response is TextResponse) {
+        yield response.token;
+      }
+    }
+  }
+
+  /// Send an image with optional text and get a streaming response.
+  Stream<String> sendImage(Uint8List imageBytes, {String? text}) async* {
+    if (_chat == null) {
+      throw StateError('Chat not started. Call startChat() first.');
+    }
+    if (!_visionEnabled) {
+      throw StateError('Vision is not enabled for this model.');
+    }
+
+    String prompt = text ?? 'Beschrijf wat je ziet op deze foto. Help de gebruiker.';
+    if (_isFirstMessage) {
+      final systemPrompt = AppConstants.getSystemPrompt(_categoryId);
+      prompt = '$systemPrompt\n\n$prompt';
+      _isFirstMessage = false;
+    }
+
+    await _chat!.addQuery(
+      Message.withImage(text: prompt, imageBytes: imageBytes, isUser: true),
+    );
 
     final stream = _chat!.generateChatResponseAsync();
     await for (final response in stream) {

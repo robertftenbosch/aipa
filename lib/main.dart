@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'config/theme.dart';
 import 'config/constants.dart';
 import 'services/llm_service.dart';
+import 'services/search_service.dart';
 import 'services/tts_service.dart';
 import 'screens/home_screen.dart';
 
@@ -29,6 +30,9 @@ class AipaApp extends StatelessWidget {
             return tts;
           },
           dispose: (_, service) => service.dispose(),
+        ),
+        Provider<SearchService>(
+          create: (_) => SearchService(),
         ),
       ],
       child: MaterialApp(
@@ -121,7 +125,7 @@ class _AppStartupState extends State<_AppStartup> {
         }
       }
 
-      await llm.loadModel();
+      await llm.loadModel(supportImage: selectedModel.supportsVision);
       if (mounted) {
         setState(() => _isDownloading = false);
         _navigateToHome();

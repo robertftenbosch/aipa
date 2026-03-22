@@ -7,6 +7,7 @@ class ModelConfig {
   final String size;
   final ModelType modelType;
   final bool requiresToken;
+  final bool supportsVision;
 
   const ModelConfig({
     required this.name,
@@ -15,6 +16,7 @@ class ModelConfig {
     required this.size,
     required this.modelType,
     this.requiresToken = false,
+    this.supportsVision = false,
   });
 }
 
@@ -26,8 +28,17 @@ class AppConstants {
 
   static const List<ModelConfig> availableModels = [
     ModelConfig(
+      name: 'Gemma 3n E4B + Vision',
+      description: "Kan foto's analyseren (TV, kabels, router). Aanbevolen!",
+      url: 'https://huggingface.co/google/gemma-3n-E4B-it-litert-preview/resolve/main/gemma-3n-E4B-it-int4.task',
+      size: '4.4 GB',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+      supportsVision: true,
+    ),
+    ModelConfig(
       name: 'Gemma 3 1B',
-      description: 'Klein en snel model, goed voor eenvoudige taken',
+      description: 'Klein en snel, alleen tekst',
       url: 'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.task',
       size: '529 MB',
       modelType: ModelType.gemmaIt,
@@ -35,7 +46,7 @@ class AppConstants {
     ),
     ModelConfig(
       name: 'Gemma 3n E2B',
-      description: 'Groter model, beter in Nederlands',
+      description: 'Groter model, beter in Nederlands, alleen tekst',
       url: 'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',
       size: '3.1 GB',
       modelType: ModelType.gemmaIt,
@@ -43,7 +54,7 @@ class AppConstants {
     ),
     ModelConfig(
       name: 'DeepSeek R1 1.5B',
-      description: 'Geen account nodig, redelijk goed',
+      description: 'Geen account nodig, alleen tekst',
       url: 'https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv1280.task',
       size: '1.6 GB',
       modelType: ModelType.deepSeek,

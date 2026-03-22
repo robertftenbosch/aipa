@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../models/chat_message.dart';
 import '../models/task_category.dart';
 import '../providers/chat_provider.dart';
 import '../services/llm_service.dart';
+import '../services/search_service.dart';
 import '../services/speech_service.dart';
 import '../services/tts_service.dart';
 import '../widgets/chat_bubble.dart';
@@ -22,6 +24,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final SpeechService _speech = SpeechService();
   final TextEditingController _textController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
 
   bool _speechAvailable = false;
   bool _isListening = false;
@@ -72,6 +75,107 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _pickImage(ChatProvider provider) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Foto kiezen',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, size: 32),
+                title: const Text('Maak een foto',
+                    style: TextStyle(fontSize: 20)),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, size: 32),
+                title: const Text('Kies uit bibliotheek',
+                    style: TextStyle(fontSize: 20)),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final image = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 768,
+      maxHeight: 768,
+    );
+
+    if (image == null) return;
+
+    final bytes = await image.readAsBytes();
+    final description = _textController.text.trim();
+    _textController.clear();
+
+    await provider.sendImage(
+      bytes,
+      text: description.isNotEmpty
+          ? description
+          : 'Wat zie je op deze foto? Help mij alstublieft.',
+    );
+  }
+
+  void _showSearchDialog(ChatProvider provider) {
+    final searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Zoeken op internet',
+          style: TextStyle(fontSize: 24),
+        ),
+        content: TextField(
+          controller: searchController,
+          style: const TextStyle(fontSize: 18),
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Bijv. "hoe HDMI kabel aansluiten"',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (query) {
+            if (query.trim().isNotEmpty) {
+              Navigator.pop(context);
+              provider.searchAndAsk(query.trim());
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                const Text('Annuleren', style: TextStyle(fontSize: 18)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              final query = searchController.text.trim();
+              if (query.isNotEmpty) {
+                Navigator.pop(context);
+                provider.searchAndAsk(query);
+              }
+            },
+            icon: const Icon(Icons.search),
+            label: const Text('Zoeken', style: TextStyle(fontSize: 18)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -87,6 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final provider = ChatProvider(
           llm: context.read<LlmService>(),
           tts: context.read<TtsService>(),
+          search: context.read<SearchService>(),
           category: widget.category,
         );
         provider.initChat();
@@ -112,12 +217,32 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: _buildMessageList(provider),
                 ),
+                if (provider.isSearching)
+                  const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Zoeken op internet...',
+                            style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ),
                 MessageInput(
                   textController: _textController,
                   onSend: (text) => provider.sendMessage(text),
+                  onCameraPressed: () => _pickImage(provider),
+                  onSearchPressed: () => _showSearchDialog(provider),
                   isGenerating: provider.isGenerating,
                   isListening: _isListening,
                   speechAvailable: _speechAvailable,
+                  visionAvailable: provider.visionEnabled,
                   onVoicePressed: () => _toggleListening(provider),
                   onStopGeneration: provider.stopGeneration,
                 ),

@@ -4,9 +4,12 @@ import 'voice_button.dart';
 class MessageInput extends StatefulWidget {
   final TextEditingController textController;
   final void Function(String text) onSend;
+  final VoidCallback? onCameraPressed;
+  final VoidCallback? onSearchPressed;
   final bool isGenerating;
   final bool isListening;
   final bool speechAvailable;
+  final bool visionAvailable;
   final VoidCallback? onVoicePressed;
   final VoidCallback? onStopGeneration;
 
@@ -14,9 +17,12 @@ class MessageInput extends StatefulWidget {
     super.key,
     required this.textController,
     required this.onSend,
+    this.onCameraPressed,
+    this.onSearchPressed,
     required this.isGenerating,
     required this.isListening,
     required this.speechAvailable,
+    this.visionAvailable = false,
     this.onVoicePressed,
     this.onStopGeneration,
   });
@@ -68,59 +74,108 @@ class _MessageInputState extends State<MessageInput> {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            VoiceButton(
-              isListening: widget.isListening,
-              isAvailable: widget.speechAvailable,
-              onPressed: widget.onVoicePressed,
-            ),
-            if (widget.speechAvailable) const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: widget.textController,
-                focusNode: _focusNode,
-                style: const TextStyle(fontSize: 18),
-                maxLines: 3,
-                minLines: 1,
-                decoration: const InputDecoration(
-                  hintText: 'Typ uw vraag...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(24)),
+            // Action buttons row (camera, search)
+            Row(
+              children: [
+                if (widget.visionAvailable)
+                  _ActionChip(
+                    icon: Icons.camera_alt,
+                    label: 'Foto',
+                    onPressed: widget.onCameraPressed,
                   ),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                if (widget.visionAvailable) const SizedBox(width: 8),
+                _ActionChip(
+                  icon: Icons.search,
+                  label: 'Zoeken',
+                  onPressed: widget.onSearchPressed,
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _handleSend(),
-              ),
+              ],
             ),
-            const SizedBox(width: 8),
-            if (widget.isGenerating)
-              SizedBox(
-                width: 56,
-                height: 56,
-                child: IconButton(
-                  onPressed: widget.onStopGeneration,
-                  icon: const Icon(Icons.stop_circle, size: 32),
-                  color: Colors.red,
-                  tooltip: 'Stop',
+            const SizedBox(height: 8),
+            // Input row
+            Row(
+              children: [
+                VoiceButton(
+                  isListening: widget.isListening,
+                  isAvailable: widget.speechAvailable,
+                  onPressed: widget.onVoicePressed,
                 ),
-              )
-            else
-              SizedBox(
-                width: 56,
-                height: 56,
-                child: IconButton.filled(
-                  onPressed: widget.textController.text.trim().isEmpty
-                      ? null
-                      : _handleSend,
-                  icon: const Icon(Icons.send, size: 28),
-                  tooltip: 'Verstuur',
+                if (widget.speechAvailable) const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: widget.textController,
+                    focusNode: _focusNode,
+                    style: const TextStyle(fontSize: 18),
+                    maxLines: 3,
+                    minLines: 1,
+                    decoration: const InputDecoration(
+                      hintText: 'Typ uw vraag...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(24)),
+                      ),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _handleSend(),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                if (widget.isGenerating)
+                  SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: IconButton(
+                      onPressed: widget.onStopGeneration,
+                      icon: const Icon(Icons.stop_circle, size: 32),
+                      color: Colors.red,
+                      tooltip: 'Stop',
+                    ),
+                  )
+                else
+                  SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: IconButton.filled(
+                      onPressed: widget.textController.text.trim().isEmpty
+                          ? null
+                          : _handleSend,
+                      icon: const Icon(Icons.send, size: 28),
+                      tooltip: 'Verstuur',
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      avatar: Icon(icon, size: 20),
+      label: Text(label, style: const TextStyle(fontSize: 16)),
+      onPressed: onPressed,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
     );
   }
