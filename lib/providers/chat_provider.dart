@@ -62,20 +62,48 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Send a user message and stream the AI response.
+  /// Send a user message. Automatically searches the web first for context,
+  /// then sends the question + search results to the AI.
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
     if (_isGenerating) return;
 
     _error = null;
+    final userText = text.trim();
 
     _messages.add(ChatMessage(
       role: MessageRole.user,
-      text: text.trim(),
+      text: userText,
     ));
     notifyListeners();
 
-    await _generateResponse(_llm.sendMessage(text.trim()));
+    // Auto-search the web for context
+    String? searchContext;
+    try {
+      _isSearching = true;
+      notifyListeners();
+
+      final results = await _search.search(userText);
+      if (results.isNotEmpty) {
+        searchContext = _search.formatResults(results);
+      }
+    } catch (_) {
+      // Search failed — continue without it
+    } finally {
+      _isSearching = false;
+      notifyListeners();
+    }
+
+    // Build prompt with optional search context
+    String prompt = userText;
+    if (searchContext != null) {
+      prompt = 'Vraag: $userText\n\n'
+          'Hier is informatie van het internet die kan helpen:\n'
+          '$searchContext\n\n'
+          'Gebruik deze informatie om een duidelijk antwoord te geven.';
+    }
+
+    await _generateResponse(_llm.sendMessage(prompt));
   }
 
   /// Send an image with optional description.
