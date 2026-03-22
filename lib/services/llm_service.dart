@@ -67,30 +67,21 @@ class LlmService {
   bool get isModelLoaded => _modelLoaded;
 
   /// Load the model into memory and prepare for inference.
-  /// Tries GPU first (much faster), falls back to CPU if GPU fails.
+  /// Uses CPU backend for reliability (GPU cache can become stale).
   Future<void> loadModel({bool supportImage = false}) async {
     _visionEnabled = supportImage;
     _modelLoaded = false;
     try {
       _model = await FlutterGemma.getActiveModel(
         maxTokens: 512,
-        preferredBackend: PreferredBackend.gpu,
+        preferredBackend: PreferredBackend.cpu,
         supportImage: supportImage,
       ).timeout(const Duration(seconds: 60));
       _modelLoaded = true;
     } catch (_) {
-      try {
-        _model = await FlutterGemma.getActiveModel(
-          maxTokens: 512,
-          preferredBackend: PreferredBackend.cpu,
-          supportImage: supportImage,
-        ).timeout(const Duration(seconds: 60));
-        _modelLoaded = true;
-      } catch (_) {
-        _model = null;
-        _modelLoaded = false;
-        rethrow;
-      }
+      _model = null;
+      _modelLoaded = false;
+      rethrow;
     }
   }
 
