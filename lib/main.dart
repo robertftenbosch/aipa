@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'config/theme.dart';
 import 'config/constants.dart';
 import 'services/llm_service.dart';
@@ -64,6 +64,7 @@ class _AppStartupState extends State<_AppStartup> {
   final _tokenController = TextEditingController();
 
   static const _tokenKey = 'hf_token';
+  static const _storage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -72,16 +73,14 @@ class _AppStartupState extends State<_AppStartup> {
   }
 
   Future<void> _loadSavedToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_tokenKey);
+    final saved = await _storage.read(key: _tokenKey);
     if (saved != null && saved.isNotEmpty) {
       _tokenController.text = saved;
     }
   }
 
   Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+    await _storage.write(key: _tokenKey, value: token);
   }
 
   Future<void> _initialize() async {
